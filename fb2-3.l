@@ -23,7 +23,8 @@
   int popfile(void);
 
 %%
-^"#"[ \t]*include[ \t]*[\"<] { BEGIN IFILE; }
+^"#"[ \t]*include[ \t]*[\"<] { BEGIN IFILE; }   /* 跳到IFILE这个状态(这个状态在文件头声明了),
+                在IFILE状态下,只有<IFILE>开头的模式会被匹配 */
 
 <IFILE>[^ \t\n\">]+          { 
                              { int c;
@@ -32,7 +33,7 @@
 			     yylineno++;
 			     if(!newfile(yytext))
                                 yyterminate(); /* no such file */
-			     BEGIN INITIAL;
+			     BEGIN INITIAL;     /* 编译完成以后，可以看到这个宏的值是零。意义其实是回到原来的状态 */
                            }
 
 <IFILE>.|\n                { fprintf(stderr, "%4d bad include line\n", yylineno);
