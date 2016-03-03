@@ -60,8 +60,7 @@ to                     /* ignore */
 %%
 
 /* hash a symbol */
-static unsigned
-symhash(char *sym)
+static unsigned symhash(char *sym)
 {
   unsigned int hash = 0;
   unsigned c;
@@ -74,19 +73,27 @@ symhash(char *sym)
 int nnew, nold;
 int nprobe;
 
-struct symbol *
-lookup(char* sym)
+/*  symtab是使用线性探测的符号表
+    函数功能是查找符号sym，如果查找不到，则创建新的条目
+  */
+struct symbol * lookup(char* sym)
 {
   struct symbol *sp = &symtab[symhash(sym)%NHASH];
   int scount = NHASH;		/* how many have we looked at */
 
   while(--scount >= 0) {
     nprobe++;
-    if(sp->name && !strcmp(sp->name, sym)) { nold++; return sp; }
+    if(sp->name && !strcmp(sp->name, sym)) {    /* 已存在符号sym */
+        nold++; return sp;
+    }
 
-    if(!sp->name) {		/* new entry */
+    if(!sp->name) {     /* new entry */
       nnew++;
-      sp->name = strdup(sym);
+      /*    flex和bison程序经常会存在难以跟踪的字符串存储管理问题；
+            因为yytext中的字符串会在下个词法记号被分析时，被替换掉；
+            用strdup就是为了产生字符串的拷贝并放到符号表条目中。
+      */
+      sp->name = strdup(sym);   /* 如果不用这个字符串的话，要free的 */
       sp->reflist = 0;
       return sp;
     }
@@ -98,13 +105,17 @@ lookup(char* sym)
 
 }
 
-void
-addref(int lineno, char *filename, char *word, int flags)
+/*  添加对特定单词的引用
+    注意这个函数并不创建文件名的拷贝，也不拷贝单词
+ */
+void addref(int lineno, char *filename, char *word, int flags)
 {
   struct ref *r;
   struct symbol *sp = lookup(word);
 
-  /* don't do dups */
+  /* 如果符号已经有一个队相同行号和文件名的引用，则不会添加它。
+     可以使符号表小一点。但是对于代码文件，这种处理有可能会导致一些问题。
+  */
   if(sp->reflist &&
      sp->reflist->lineno == lineno && sp->reflist->filename == filename) return;
 
@@ -124,8 +135,7 @@ addref(int lineno, char *filename, char *word, int flags)
  */
 
 /* aux function for sorting */
-static int
-symcompare(const void *xa, const void *xb)
+static int symcompare(const void *xa, const void *xb)
 {
   const struct symbol *a = xa;
   const struct symbol *b = xb;
@@ -138,8 +148,7 @@ symcompare(const void *xa, const void *xb)
   return strcmp(a->name, b->name);
 }
 
-void
-printrefs()
+void printrefs()
 {
   struct symbol *sp;
 
@@ -148,11 +157,10 @@ printrefs()
   for(sp = symtab; sp->name && sp < symtab+NHASH; sp++) {
     char *prevfn = NULL;	/* last printed filename, to skip dups */
 
-    /* reverse the list of references */
+    /* reverse the list of references!! */
     struct ref *rp = sp->reflist;
     struct ref *rpp = 0;	/* previous ref */
     struct ref *rpn;	/* next ref */
-
     do {
       rpn = rp->next;
       rp->next = rpp;
@@ -164,10 +172,10 @@ printrefs()
     printf("%10s", sp->name);
     for(rp = rpp; rp; rp = rp->next) {
       if(rp->filename == prevfn) {
-	printf(" %d", rp->lineno);
+        printf(" %d", rp->lineno);
       } else {
-	printf(" %s:%d", rp->filename, rp->lineno);
-	prevfn = rp->filename;
+        printf(" %s:%d", rp->filename, rp->lineno);
+        prevfn = rp->filename;
       }
     }
     printf("\n");
@@ -200,8 +208,8 @@ char **argv;
     fclose(f);
   }
 
-  printf("old = %d, new = %d, total = %d, probes = %d, avg = %1.2f\n",
-	 nold, nnew, nold+nnew, nprobe, (float)nprobe / (nold+nnew));
+  /* 打印统计信息 */
+  printf("old = %d, new = %d, total = %d, probes = %d, avg = %1.2f\n", nold, nnew, nold+nnew, nprobe, (float)nprobe / (nold+nnew));
 
   printrefs();
 }
