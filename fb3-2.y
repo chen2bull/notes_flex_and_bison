@@ -30,6 +30,10 @@
 
 
 %nonassoc <fn> CMP
+/*  right表示该操作符号是右结合的，
+    nonassoc表示该符号没有优先级
+    符号出现的顺序指定了优先级
+    */
 %right '='
 %left '+' '-'
 %left '*' '/'
@@ -63,7 +67,7 @@ exp: exp CMP exp          { $$ = newcmp($2, $1, $3); }
    | exp '/' exp          { $$ = newast('/', $1,$3); }
    | '|' exp              { $$ = newast('|', $2, NULL); }
    | '(' exp ')'          { $$ = $2; }
-   | '-' exp %prec UMINUS { $$ = newast('M', $2, NULL); }
+   | '-' exp %prec UMINUS { $$ = newast('M', $2, NULL); }   /* 用prec 可以让bison把UMINUS的优先级赋予这个规则 */
    | NUMBER               { $$ = newnum($1); }
    | FUNC '(' explist ')' { $$ = newfunc($1, $3); }
    | NAME                 { $$ = newref($1); }

@@ -25,6 +25,7 @@ struct numval {
 };
 
 /* build an AST */
+/* 以下是 */
 struct ast *newast(int nodetype, struct ast *l, struct ast *r);
 struct ast *newnum(double d);
 
