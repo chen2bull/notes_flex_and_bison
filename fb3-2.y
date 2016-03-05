@@ -19,6 +19,9 @@
   struct symlist *sl;
   int fn;			/* which function */
 }
+/*
+    union 用来声明 语法分析器中符号值的类型。也就是影响YYSTYPE这个union类型的定义。
+    而yylval的类型就是YYSTYPE */
 
 /* declare tokens */
 %token <d> NUMBER
@@ -39,6 +42,13 @@
 %left '*' '/'
 %nonassoc '|' UMINUS
 
+/*  一旦使用%union声明，我们需要告诉bison每种语法符号使用的值类型 通过<和>中的联合体成员名字来确定。
+    “tonken <d> NUMBER”表示NUMBER通过符号<d>来保存具体的数值
+    type声明把值<a>赋给exp、factor和term。
+    当声明中存在%union时，如果试图使用一个没有被赋予类型的符号值，bison将会报错。
+    规则中如果没有显示的语义动作代码是，规则将使用语义动作$$ = $1。
+
+ */
 %type <a> exp stmt list explist
 %type <sl> symlist
 
